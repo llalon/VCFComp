@@ -204,19 +204,18 @@ barplot1 <- barplot_by_indiv(depth.fb, depth.mp) +
 
 ## Results
 
+Compared to mpileup, freebayes had an overall larger number of SNPs; between both methods, freebayes and mpileup had 31.2% of SNPs in common, where as freebayes had 51.7% of total unique SNPs (Fig 2).
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-```{r, fig.cap="Plot1", echo = FALSE, warning=FALSE, message = FALSE}
+```{r plot1, echo = FALSE, warning=FALSE, message = FALSE, fig.cap="***Fig 1.*** Distribution of (A) mean depth per SNP, (B) SNPs minor allele frequency, and (C) mean depth per individual for freebayes, and mpileup variant calling methods."}
 ggarrange(hist1 + ggtitle("A"),
           hist2 + theme(axis.title.y = element_blank()) + ggtitle("B"),
-          ncol = 2, nrow = 1, common.legend = TRUE, legend = "bottom")
+          barplot1 + ggtitle("C"),
+          ncol = 2, nrow = 2, common.legend = TRUE, legend = "bottom")
 ```
 
-```{r, fig.cap="Plot1", echo = FALSE, warning=FALSE, message = FALSE}
-barplot1
-```
-
-```{r, fig.cap="Plot1", echo = FALSE, warning=FALSE, message = FALSE}
+```{r plot2, echo = FALSE, warning=FALSE, message = FALSE, fig.cap="***Fig 2.*** Differences in the number of SNPs between freebayes, and mpileup."}
 venn1
 ```
 
