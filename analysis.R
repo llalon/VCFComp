@@ -38,7 +38,7 @@ hist1 <- stack_hists(locusdepth.fb$SUM_DEPTH / n, locusdepth.mp$SUM_DEPTH / n) +
 hist2 <- stack_hists(freq.fb$FREQ, freq.mp$FREQ) + xlab("Minor Allele Frequency")
 
 # Venn diagram showing SNPs between each method. See readme.txt in isec folder for information on files
-venn1 <- venn_by_counts(snp.stats[3, 3], snp.stats[4, 3], snp.stats[6, 3]) + ggtitle("Differences in SNPs between 2 variant calling methods")
+venn1 <- venn_by_counts(snp.stats[3, 3], snp.stats[4, 3], snp.stats[6, 3])
 
 # Mean depth across individuals for each method
 barplot1 <- barplot_by_indiv(depth.fb, depth.mp) + xlab("Individual") + ylab("Mean Depth") + labs(fill = "Method")

@@ -7,4 +7,8 @@ work_dir/
 #
 out.*
 
-Proj3.Rmd
+#Proj3.Rmd
+
+*.pdf
+
+*.html

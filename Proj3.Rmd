@@ -1,0 +1,232 @@
+---
+title: "Project 3"
+author: "Liam Lalonde"
+date: "17/03/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include, include=FALSE}
+library(ggpubr)
+setwd("C:/Users/liaml/git/VCFComp/out")
+source("../funcs.R")
+source("../analysis.R")
+```
+
+## Introduction
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+## Methods
+
+The 2 variant calling methods that were used and compared were bcftools mpileup (Li et al., 2009), and freebayes (Garrison & Marth, 2012). 10 unknown sequences of individual burbot (*lota. lota*) fish were obtained from Mandeville et al. 2014 which were previously aligned to a burbot reference *l. lota* genome (GCA_900302385.1_ASM90030238v1_genomic). Read group information was added to each sample using picard. The resulting VCFs were filtered by quality, greater than 20 only, using vcffilter, and variant stats, including number of SNPs, and minor allele frequency was obtained using bcftools and vcftools. Multi-allelic SNPs and indels were not filtered. The full pipeline code can be found within the appendix, or at https://github.com/llalon/VCFComp, with only key components shown below. Computation was done on the compute Canada platform.
+
+Directories, on ComputeCanada Cedar, used for the analysis:
+
+```{bash, eval = FALSE}
+#!/bin/bash
+ROOT_DIR='/scratch/llalon02/Project3/pthree' # root project path
+WORK_DIR=$ROOT_DIR'/work_dir' # 'working dir' where scripts are run from
+DATA_DIR=$ROOT_DIR'/data' 
+BAM_DIR=$DATA_DIR'/sorted_bams' # sorted bams obtained from previous analysis
+VCF_DIR=$DATA_DIR'/vcf' # resulting vcf files
+OUT_DIR=$ROOT_DIR'/out' # summary stats
+REF=$DATA_DIR'/burbot_reference_genome/GCA_900302385.1_ASM90030238v1_genomic.fna' # reference genome file
+SCR_DIR=$ROOT_DIR'/sbatch_scripts' # slurm scripts
+```
+
+Adding read groups:
+
+```{bash, eval = FALSE}
+#!/bin/bash
+... # '...' Indicating chuck of full script
+# Iterating through each of the 10 individual sorted bam files and adding read group information using picard.
+i=0
+for bam in $BAM_DIR/*.sorted.bam; do
+    [ -e "$bam" ] || continue
+
+    # Iterator for sample number. 1-10
+    (( i += 1 ))
+
+    ID=$i
+    LB="lib1"
+    PU="unit1"
+    SM="bb$i" # bb1 - bb10
+    FOUT="$(echo $bam | cut -f1 -d'.').sorted.rg.bam" # Ad .rg to file name to indicate readgroups have been added.
+
+    # Generate RG
+    java -jar $EBROOTPICARD/picard.jar AddOrReplaceReadGroups \
+        I=$bam \
+        O=$FOUT \
+        RGID=$ID RGLB=$LB RGPL=illumina \
+        RGPU=$PU \
+        RGSM=$SM
+
+    # Re index
+    samtools index $FOUT
+done
+...
+```
+
+Running the variant calling software:
+
+```{bash, eval = FALSE}
+#!/bin/bash
+...
+# running mpileup and freebayes against all 10 individuals to a single vcf
+
+# mpileup
+bcftools mpileup -a DP,AD -f $REF $BAM_DIR/*.sorted.bam \
+    | bcftools call -m --variants-only \
+    > $OUT_DIR'/mpileup_all.vcf'
+    
+# freebayes
+for bam in $BAM_DIR/*.sorted.rg.bam; do
+    echo $bam >> $BAM_LIST # where bam list is a temperary file
+done
+freebayes -f $REF -L $BAM_LIST > $OUT_DIR'/freebayes_all.vcf'
+...
+```
+
+Resulting vcfs were filtered by quality:
+
+```{bash, eval = FALSE}
+#!/bin/bash
+...
+# Filter out those will 20 or less quality score
+for vcf in $VCF_DIR/*.vcf; do
+    fout=$vcf.filtrd
+    vcffilter -f "QUAL > 20" $vcf > $fout
+done
+...
+```
+
+Filtered vcfs were analyzed using vcftools/bcftools to determine depths, allele frequencies, and the number of SNPs:
+
+```{bash, eval = FALSE}
+#!/bin/bash
+...
+# Generate a tsv of SNP number
+FOUT=$OUT_DIR/snp_stats.txt
+echo "number of SNPS:" >> $FOUT
+
+for v in *.filtrd; do
+    # 1 file each
+    vcftools --vcf $(basename $v) --site-depth -c > $(basename $v).locusdepth.txt # site depth
+    vcftools --vcf $(basename $v) --depth -c > $(basename $v).inddepth.txt # individual depth per sample
+    vcftools --vcf $(basename $v) --freq -c > $(basename $v).freq.txt # allele frequencies
+    
+    # append the number of SNPs to the tsv. All in 1 file
+    echo "$(basename $v)  $(bcftools stats $v | grep "number of SNPs:" | cut -f 4)" >> $FOUT
+done
+...
+```
+
+Find differences in SNPs between each:
+
+```{bash, eval = FALSE}
+#!/bin/bash
+...
+# Find different/ overlapping SNPs between the 2 methods. $VCF1 and $VCF2 are freebayes and mpileup respectively
+
+# bgzip vcfs, re index, and run isec on each
+bgzip $VCF1 -c > vcf1.gz
+bgzip $VCF2 -c > vcf2.gz
+bcftools index vcf1.gz
+bcftools index vcf2.gz
+bcftools isec -p isec vcf1.gz vcf2.gz
+
+# Append the number of snps to the resulting 4 vcfs to the summary file
+for i in isec/*.vcf; do
+    echo "$(basename $i)  $(bcftools stats $i | grep "number of SNPs:" | cut -f 4)" >> $FOUT
+done
+...
+```
+
+The resulting data was parsed and analyzed, and plots were generated using R:
+
+```{r, eval = FALSE}
+#!/usr/bin/env RScript
+
+### Read in the data
+# SNP counts - see readme.txt in isec folder for information on files
+snp.stats <- read.delim("snp_stats.txt")
+snp.stats$file <- sapply(strsplit(snp.stats$number.of.SNPS., "\\s+"), `[`, 1)
+snp.stats$count <- as.numeric(sapply(strsplit(snp.stats$number.of.SNPS., "\\s+"), `[`, 2))
+
+# Depth
+locusdepth.fb <- read.delim("freebayes_all.vcf.filtrd.locusdepth.txt")
+locusdepth.mp <- read.delim("mpileup_all.vcf.filtrd.locusdepth.txt")
+
+depth.fb <- read.delim("freebayes_all.vcf.filtrd.inddepth.txt")
+depth.mp <- read.delim("mpileup_all.vcf.filtrd.inddepth.txt")
+
+# Frequency data
+freq.fb <- read.delim("freebayes_all.vcf.filtrd.freq.txt", row.names = NULL)
+freq.mp <- read.delim("mpileup_all.vcf.filtrd.freq.txt", row.names = NULL)
+
+names(freq.fb) <- c("CHROM", "POS", "N_ALLELES", " N_CHR", "AF1", "AF2")
+names(freq.mp) <- c("CHROM", "POS", "N_ALLELES", " N_CHR", "AF1", "AF2")
+
+freq.fb$FREQ <- as.numeric(sapply(strsplit(freq.fb$AF2, ":"), `[`, 2))
+freq.mp$FREQ <- as.numeric(sapply(strsplit(freq.mp$AF2, ":"), `[`, 2))
+
+### Calculate
+
+# MAF 
+freq.fb$FREQ <- ifelse(freq.fb$FREQ > 0.5, 1 - freq.fb$FREQ, freq.fb$FREQ)
+freq.mp$FREQ <- ifelse(freq.mp$FREQ > 0.5, 1 - freq.mp$FREQ, freq.mp$FREQ)
+
+# Sample size
+n <- nrow(depth.fb)
+
+### Generate plots
+
+# Stacked histograms for MAF and mean depth
+hist1 <- stack_hists(locusdepth.fb$SUM_DEPTH / n, locusdepth.mp$SUM_DEPTH / n) +
+    xlab("Mean Depth per SNP") + xlim(0, 200) + ylim(0, 45000)
+hist2 <- stack_hists(freq.fb$FREQ, freq.mp$FREQ) +
+    xlab("Minor Allele Frequency")
+
+# Venn diagram showing SNPs between each method. See readme.txt in isec folder for information on files
+venn1 <- venn_by_counts(snp.stats[3, 3], snp.stats[4, 3], snp.stats[6, 3]) +
+    ggtitle("Differences in SNPs between 2 variant calling methods")
+
+# Mean depth across individuals for each method
+barplot1 <- barplot_by_indiv(depth.fb, depth.mp) +
+    xlab("Individual") + ylab("Mean Depth") + labs(fill = "Method")
+```
+
+## Results
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+```{r, fig.cap="Plot1", echo = FALSE, warning=FALSE, message = FALSE}
+ggarrange(hist1 + ggtitle("A"),
+          hist2 + theme(axis.title.y = element_blank()) + ggtitle("B"),
+          ncol = 2, nrow = 1, common.legend = TRUE, legend = "bottom")
+```
+
+```{r, fig.cap="Plot1", echo = FALSE, warning=FALSE, message = FALSE}
+barplot1
+```
+
+```{r, fig.cap="Plot1", echo = FALSE, warning=FALSE, message = FALSE}
+venn1
+```
+
+## Discussion
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+## References
+
+Mandeville et al. 2014
+(Li et al., 2009)
+(Garrison & Marth, 2012)
+https://www.ncbi.nlm.nih.gov/assembly/GCA_900302385.1/#/st
