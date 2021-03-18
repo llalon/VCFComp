@@ -18,9 +18,9 @@ echo "Filtering VCFs.."
 for vcf in $VCF_DIR/*.vcf; do
     echo $vcf
     fout=$vcf.filtrd
-
+    
     vcffilter -f "QUAL > 20" $vcf > $fout
-
+    
 done
 
 echo "All done now"

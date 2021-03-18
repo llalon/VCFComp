@@ -21,9 +21,9 @@ i=0
 for bam in $BAM_DIR/*.sorted.bam; do
     [ -e "$bam" ] || continue
     (( i += 1 ))
-
+    
     for file in *.inddepth.txt; do
         sed -i "s+$bam+bb$i+g" $file
     done
-
+    
 done
