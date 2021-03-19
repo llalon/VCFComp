@@ -1,3 +1,5 @@
+#!/usr/bin/env RScript
+
 ### Read in the data
 
 # SNP counts - see readme.txt in isec folder for information on files

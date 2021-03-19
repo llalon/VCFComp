@@ -19,7 +19,7 @@ echo "Running mpileup for all bams in $BAM_DIR with $REF"
 mkdir -p $OUT_DIR
 
 bcftools mpileup -a DP,AD -f $REF $BAM_DIR/*.sorted.bam \
-    | bcftools call -m --variants-only \
-    > $OUT_DIR'/mpileup_all.vcf'
+| bcftools call -m --variants-only \
+> $OUT_DIR'/mpileup_all.vcf'
 
 echo "All done now"

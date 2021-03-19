@@ -12,3 +12,5 @@ out.*
 *.pdf
 
 *.html
+
+.Rhistory

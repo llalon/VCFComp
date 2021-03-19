@@ -1,3 +1,5 @@
+#!/usr/bin/env RScript
+# Helper functions to make plots
 library(ggplot2)
 library(ggvenn)
 

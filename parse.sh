@@ -1,9 +1,6 @@
-#!/bin/sh
-# Does not need to be run as slurm job
+#!/bin/bash
 
 module load vcftools
-
-source ./env.sh
 
 cd $VCF_DIR
 

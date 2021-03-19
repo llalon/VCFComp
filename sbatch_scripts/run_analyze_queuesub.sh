@@ -41,7 +41,7 @@ fi
 # For isec files
 for i in isec/*.vcf; do
     echo "$(basename $i)  $(bcftools stats $i | grep "number of SNPs:" | cut -f 4)" >> $FOUT
-
+    
 done
 
 cat $FOUT
