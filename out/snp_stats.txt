@@ -1,7 +1,0 @@
-number of SNPS:
-freebayes_all.vcf.filtrd  106117
-mpileup_all.vcf.filtrd  61846
-0000.vcf  66184
-0001.vcf  21913
-0002.vcf  39933
-0003.vcf  39933
