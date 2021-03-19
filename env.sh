@@ -3,8 +3,7 @@
 # This script contains global variables for the project
 
 # Root project dir
-#ROOT_DIR='/scratch/llalon02/Project3/pthree'
-ROOT_DIR='/scratch-deleted-2021-mar-20/llalon02/P3/pthree'
+ROOT_DIR='/scratch/llalon02/Project3/pthree'
 
 # The directory everything will be run out of
 WORK_DIR=$ROOT_DIR'/work_dir'
