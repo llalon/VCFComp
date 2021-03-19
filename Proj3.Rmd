@@ -44,22 +44,22 @@ Adding read groups:
 
 ```{bash, eval = FALSE}
 #!/bin/bash
-... # '...' Indicating chuck of full script
-# Iterating through each of the 10 individual sorted bam files and adding read group information using picard.
+... # '...' indicating chuck of full script
+# iterating through each of the 10 individual sorted bam files and adding read group information using picard
 i=0
 for bam in $BAM_DIR/*.sorted.bam; do
     [ -e "$bam" ] || continue
 
-    # Iterator for sample number. 1-10
+    # iterator for sample number. 1-10
     (( i += 1 ))
 
     ID=$i
     LB="lib1"
     PU="unit1"
     SM="bb$i" # bb1 - bb10
-    FOUT="$(echo $bam | cut -f1 -d'.').sorted.rg.bam" # Ad .rg to file name to indicate readgroups have been added.
+    FOUT="$(echo $bam | cut -f1 -d'.').sorted.rg.bam" # add .rg to file name to indicate readgroups have been added.
 
-    # Generate RG
+    # generate RG
     java -jar $EBROOTPICARD/picard.jar AddOrReplaceReadGroups \
         I=$bam \
         O=$FOUT \
@@ -67,7 +67,7 @@ for bam in $BAM_DIR/*.sorted.bam; do
         RGPU=$PU \
         RGSM=$SM
 
-    # Re index
+    # re-index
     samtools index $FOUT
 done
 ...
@@ -98,7 +98,7 @@ Resulting vcfs were filtered by quality:
 ```{bash, eval = FALSE}
 #!/bin/bash
 ...
-# Filter out those will 20 or less quality score
+# filter out those with 20 or less quality score
 for vcf in $VCF_DIR/*.vcf; do
     fout=$vcf.filtrd
     vcffilter -f "QUAL > 20" $vcf > $fout
@@ -111,7 +111,7 @@ Filtered vcfs were analyzed using vcftools/bcftools to determine depths, allele 
 ```{bash, eval = FALSE}
 #!/bin/bash
 ...
-# Generate a tsv of SNP number
+# generate a tsv of SNP number
 FOUT=$OUT_DIR/snp_stats.txt
 echo "number of SNPS:" >> $FOUT
 ...
@@ -121,7 +121,7 @@ for v in *.filtrd; do
     vcftools --vcf $(basename $v) --depth -c > $(basename $v).inddepth.txt # individual depth per sample
     vcftools --vcf $(basename $v) --freq -c > $(basename $v).freq.txt # allele frequencies
     ...
-    # append the number of SNPs to the tsv. All in 1 file
+    # append the number of SNPs to the tsv (single file)
     echo "$(basename $v)  $(bcftools stats $v | grep "number of SNPs:" | cut -f 4)" >> $FOUT
 done
 ...
@@ -132,7 +132,7 @@ Find differences in SNPs between each:
 ```{bash, eval = FALSE}
 #!/bin/bash
 ...
-# Find different/ overlapping SNPs between the 2 methods. $VCF1 and $VCF2 are freebayes and mpileup respectively
+# find different/ overlapping SNPs between the 2 methods. $VCF1 and $VCF2 are freebayes and mpileup respectively
 
 # bgzip vcfs, re index, and run isec on each
 bgzip $VCF1 -c > vcf1.gz
@@ -141,7 +141,7 @@ bcftools index vcf1.gz
 bcftools index vcf2.gz
 bcftools isec -p isec vcf1.gz vcf2.gz
 
-# Append the number of snps to the resulting 4 vcfs to the summary file
+# append the number of SNPs to the resulting 4 vcfs to the summary file
 for i in isec/*.vcf; do
     echo "$(basename $i)  $(bcftools stats $i | grep "number of SNPs:" | cut -f 4)" >> $FOUT
 done
@@ -153,20 +153,20 @@ The resulting data was parsed and analyzed, and plots were generated using R:
 ```{r, eval = FALSE}
 #!/usr/bin/env RScript
 
-### Read in the data
+### read in the data
 # SNP counts - see readme.txt in isec folder for information on files
 snp.stats <- read.delim("snp_stats.txt")
 snp.stats$file <- sapply(strsplit(snp.stats$number.of.SNPS., "\\s+"), `[`, 1)
 snp.stats$count <- as.numeric(sapply(strsplit(snp.stats$number.of.SNPS., "\\s+"), `[`, 2))
 
-# Depth
+# depth
 locusdepth.fb <- read.delim("freebayes_all.vcf.filtrd.locusdepth.txt")
 locusdepth.mp <- read.delim("mpileup_all.vcf.filtrd.locusdepth.txt")
 
 depth.fb <- read.delim("freebayes_all.vcf.filtrd.inddepth.txt")
 depth.mp <- read.delim("mpileup_all.vcf.filtrd.inddepth.txt")
 
-# Frequency data
+# frequency data
 freq.fb <- read.delim("freebayes_all.vcf.filtrd.freq.txt", row.names = NULL)
 freq.mp <- read.delim("mpileup_all.vcf.filtrd.freq.txt", row.names = NULL)
 
@@ -182,22 +182,22 @@ freq.mp$FREQ <- as.numeric(sapply(strsplit(freq.mp$AF2, ":"), `[`, 2))
 freq.fb$FREQ <- ifelse(freq.fb$FREQ > 0.5, 1 - freq.fb$FREQ, freq.fb$FREQ)
 freq.mp$FREQ <- ifelse(freq.mp$FREQ > 0.5, 1 - freq.mp$FREQ, freq.mp$FREQ)
 
-# Sample size
+# sample size
 n <- nrow(depth.fb)
 
-### Generate plots
+### generate plots
 
-# Stacked histograms for MAF and mean depth
+# stacked histograms for MAF and mean depth
 hist1 <- stack_hists(locusdepth.fb$SUM_DEPTH / n, locusdepth.mp$SUM_DEPTH / n) +
     xlab("Mean Depth per SNP") + xlim(0, 200) + ylim(0, 45000)
 hist2 <- stack_hists(freq.fb$FREQ, freq.mp$FREQ) +
     xlab("Minor Allele Frequency")
 
-# Venn diagram showing SNPs between each method. See readme.txt in isec folder for information on files
+# venn diagram showing SNPs between each method. See readme.txt in isec folder for information on files
 venn1 <- venn_by_counts(snp.stats[3, 3], snp.stats[4, 3], snp.stats[6, 3]) +
     ggtitle("Differences in SNPs between 2 variant calling methods")
 
-# Mean depth across individuals for each method
+# mean depth across individuals for each method
 barplot1 <- barplot_by_indiv(depth.fb, depth.mp) +
     xlab("Individual") + ylab("Mean Depth") + labs(fill = "Method")
 ```
@@ -256,7 +256,7 @@ library(ggplot2)
 library(ggvenn)
 
 stack_hists <- function(vector1, vector2, name1 = "freebayes", name2 = "mpileup") {
-  # Generates a stacked histogram (ggplot2) from 2 vectors
+  # generates a stacked histogram (ggplot2) from 2 vectors
   df1 <- data.frame(name1, vector1)
   df2 <- data.frame(name2, vector2)
   names(df1) <- c("x", "y")
@@ -272,7 +272,7 @@ stack_hists <- function(vector1, vector2, name1 = "freebayes", name2 = "mpileup"
 }
 
 transform_counts <- function(df) {
-  # Takes a df containing counts and categories (1/1, 1/0, 0/1) and creates data to generate a venn diagram from.
+  # takes a df containing counts and categories (1/1, 1/0, 0/1) and creates data to generate a venn diagram from.
   # https://stackoverflow.com/questions/26761754/create-venn-diagram-using-existing-counts-in-r
   sets = vector(mode = 'list', length = ncol(df) - 1)
   names(sets) = names(df)[1:(ncol(df) - 1)]
@@ -290,14 +290,14 @@ transform_counts <- function(df) {
 }
 
 venn_by_counts <- function(count1, count2, common, name1 = "freebayes", name2 = "mpileup") {
-  # Generates a venn diagram from raw count numbers
+  # generates a venn diagram from raw count numbers
   df.counts <- as.data.frame(rbind(c(1, 1, common), c(1, 0, count1), c(0, 1, count2)))
   names(df.counts) <- c(name1, name2, "counts")
   return(ggvenn(transform_counts(df.counts), fill_color = c("red", "blue")))
 }
 
 barplot_by_indiv <- function(df1, df2, name1 = "freebayes", name2 = "mpileup") {
-  # Generates a side by side bar plot (ggplot) from 2 dataframes
+  # generates a side by side bar plot (ggplot) from 2 dataframes
   ns <- c(names(df1), "fill")
   df1 <- cbind(df1, rep(name1, nrow(df1)))
   df2 <- cbind(df2, rep(name2, nrow(df2)))
