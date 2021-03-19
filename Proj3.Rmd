@@ -20,11 +20,11 @@ source("../analysis.R")
 
 ## Introduction
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Variant calling is the process of determining and quantifying genetic variation, in the form of singular nucleotide polymorphisms (SNPs), multi-nucleotide polymorphisms (MNPs), insertions, and deletions (indels), and other complex events,  between 2 or more samples. It has a variety of applications including studies in population genetics (Wright et al, 2019) and clinical studies to determine polygenic risk scores and individuals likeliness/ predisposition to specific diseases such as cancer (Na et al., 2019). 2 commonly used methods for variant calling are bcftools mpileup (Li et al, 2009) and freebayes (Garrison & Marth, 2012). Each of these methods accomplishes the same task however arrive there in different ways. Freebayes is a bayesian, haplotype-based caller which calls variants based on literal sequence reads rather than their precise alignment like mpileup which avoids the problem of identical sequences having multiple alignments, however may increase the number of false positives (Garrison & Marth, 2012). Depending on the desired outcome, one of these methods may be preferable to the other. The following compares performance between each of these methods.
 
 ## Methods
 
-The 2 variant calling methods that were used and compared were bcftools mpileup (Li et al., 2009), and freebayes (Garrison & Marth, 2012). 10 unknown sequences of individual burbot (*lota. lota*) fish were obtained from Mandeville et al. 2014 which were previously aligned to a burbot reference *l. lota* genome (GCA_900302385.1_ASM90030238v1_genomic). Read group information was added to each sample using picard. The resulting VCFs were filtered by quality, greater than 20 only, using vcffilter, and variant stats, including number of SNPs, and minor allele frequency was obtained using bcftools and vcftools. Multi-allelic SNPs and indels were not filtered. The full pipeline code can be found within the appendix, or at https://github.com/llalon/VCFComp, with only key components shown below. Computation was done on the compute Canada platform.
+Bcftools mpileup version 1.9, and freebayes version 1.2.0 was used to compare. 10 unknown sequences of individual burbot (*lota. lota*) fish were obtained from Mandeville et al. 2014 which were previously aligned to a burbot reference *l. lota* genome (GCA_900302385.1_ASM90030238v1_genomic). Read group information was added to each sample using Picard version 2.23.2. The resulting VCFs were filtered by quality, greater than 20 only, using vcffilter, and variant stats, including the number of SNPs, and minor allele frequency was obtained using bcftools and vcftools. Multi-allelic SNPs and indels were not filtered. The full pipeline code can be found at https://github.com/llalon/VCFComp, with only key components shown below, and within the appendix. Computation was done on the compute Canada platform.
 
 Directories, on ComputeCanada Cedar, used for the analysis:
 
@@ -84,7 +84,7 @@ Running the variant calling software:
 bcftools mpileup -a DP,AD -f $REF $BAM_DIR/*.sorted.bam \
     | bcftools call -m --variants-only \
     > $OUT_DIR'/mpileup_all.vcf'
-    
+...    
 # freebayes
 for bam in $BAM_DIR/*.sorted.rg.bam; do
     echo $bam >> $BAM_LIST # where bam list is a temperary file
@@ -114,13 +114,13 @@ Filtered vcfs were analyzed using vcftools/bcftools to determine depths, allele 
 # Generate a tsv of SNP number
 FOUT=$OUT_DIR/snp_stats.txt
 echo "number of SNPS:" >> $FOUT
-
+...
 for v in *.filtrd; do
     # 1 file each
     vcftools --vcf $(basename $v) --site-depth -c > $(basename $v).locusdepth.txt # site depth
     vcftools --vcf $(basename $v) --depth -c > $(basename $v).inddepth.txt # individual depth per sample
     vcftools --vcf $(basename $v) --freq -c > $(basename $v).freq.txt # allele frequencies
-    
+    ...
     # append the number of SNPs to the tsv. All in 1 file
     echo "$(basename $v)  $(bcftools stats $v | grep "number of SNPs:" | cut -f 4)" >> $FOUT
 done
@@ -204,13 +204,9 @@ barplot1 <- barplot_by_indiv(depth.fb, depth.mp) +
 
 ## Results
 
-Compared to mpileup, freebayes had an overall larger number of SNPs; between both methods, freebayes and mpileup had 31.2% of SNPs in common, where as freebayes had 51.7% of total unique SNPs (Fig 2).
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
 ```{r plot1, echo = FALSE, warning=FALSE, message = FALSE, fig.cap="***Fig 1.*** Distribution of (A) mean depth per SNP, (B) SNPs minor allele frequency, and (C) mean depth per individual for freebayes, and mpileup variant calling methods."}
 ggarrange(hist1 + ggtitle("A"),
-          hist2 + theme(axis.title.y = element_blank()) + ggtitle("B"),
+          hist2 + ggtitle("B"),
           barplot1 + ggtitle("C"),
           ncol = 2, nrow = 2, common.legend = TRUE, legend = "bottom")
 ```
@@ -219,13 +215,100 @@ ggarrange(hist1 + ggtitle("A"),
 venn1
 ```
 
+Compared to mpileup, freebayes had an overall larger number of SNPs; Freebayes had 106117 total SNPs whereas mpileup had 61846 with 39933 overlappings between both methods (Fig 2). The mean minor allele frequency was 0.133 for freebayes and 0.057 for mpileup with similar distributions (Fig 1B). The mean depth per SNP was significantly lower for mpileup, however, with a similar distribution (Fig 1A). Lastly, there were no differences in mean depth between individuals samples (Fig 1C).
+
 ## Discussion
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Please reflect on your results. Do your results concur with what others have found when comparing variant callers? Why do you think your results do or don’t match? 1How do you think the characteristics of this dataset (non-model organism, low-quality assembly, lower coverage) affect variant calls? Are there any other features of your vcf results that you find notable? What other filters might we consider applying?
+
 
 ## References
 
+ASM90030238v1 - Genome - Assembly - NCBI. https://www.ncbi.nlm.nih.gov/assembly/GCA_900302385.1/#/st. Accessed 19 Mar. 2021.
+
+Garrison, Erik, and Gabor Marth. “Haplotype-Based Variant Detection from Short-Read Sequencing.” ArXiv:1207.3907 [q-Bio], July 2012. arXiv.org, http://arxiv.org/abs/1207.3907.
+
+Hwang, Sohyun, et al. “Systematic Comparison of Variant Calling Pipelines Using Gold Standard Personal Exome Variants.” Scientific Reports, vol. 5, no. 1, Dec. 2015, p. 17875. DOI.org (Crossref), doi:10.1038/srep17875.
+
+Li, Heng, et al. “The Sequence Alignment/Map Format and SAMtools.” Bioinformatics (Oxford, England), vol. 25, no. 16, Aug. 2009, pp. 2078–79. PubMed, doi:10.1093/bioinformatics/btp352.
+
+Na, Rong, et al. “Single-Nucleotide Polymorphism–Based Genetic Risk Score and Patient Age at Prostate Cancer Diagnosis.” JAMA Network Open, vol. 2, no. 12, Dec. 2019, p. e1918145. DOI.org (Crossref), doi:10.1001/jamanetworkopen.2019.18145.
+
+Wright, Belinda, et al. “From Reference Genomes to Population Genomics: Comparing Three Reference-Aligned Reduced-Representation Sequencing Pipelines in Two Wildlife Species.” BMC Genomics, vol. 20, no. 1, June 2019, p. 453. BioMed Central, doi:10.1186/s12864-019-5806-y.
+
+
+
+https://zbib.org/e6f49a66a05845b79c448bc46b64fa5e
+
+https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-019-5806-y
+https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2757999
 Mandeville et al. 2014
 (Li et al., 2009)
 (Garrison & Marth, 2012)
 https://www.ncbi.nlm.nih.gov/assembly/GCA_900302385.1/#/st
+
+## Appendix
+
+funcs.R - Functions used to generate plots:
+
+```{r, eval=FALSE}
+#!/usr/bin/env RScript
+
+library(ggplot2)
+library(ggvenn)
+
+stack_hists <- function(vector1, vector2, name1 = "freebayes", name2 = "mpileup") {
+  # Generates a stacked histogram (ggplot2) from 2 vectors
+  df1 <- data.frame(name1, vector1)
+  df2 <- data.frame(name2, vector2)
+  names(df1) <- c("x", "y")
+  names(df2) <- c("x", "y")
+  df <- rbind(df1, df2)
+
+  gh <- ggplot(df, aes(y, fill = x)) +
+    geom_histogram() +
+    ylab("Frequency") +
+    labs(fill = 'Method')
+
+  return(gh)
+}
+
+transform_counts <- function(df) {
+  # Takes a df containing counts and categories (1/1, 1/0, 0/1) and creates data to generate a venn diagram from.
+  # https://stackoverflow.com/questions/26761754/create-venn-diagram-using-existing-counts-in-r
+  sets = vector(mode = 'list', length = ncol(df) - 1)
+  names(sets) = names(df)[1:(ncol(df) - 1)]
+  lastElement = 0
+  for (i in 1:nrow(df)) {
+    elements = lastElement:(lastElement + df[i, ncol(df)] - 1)
+    lastElement = elements[length(elements)] + 1
+    for (j in 1:(ncol(df) - 1)) {
+      if (df[i, j] == 1) {
+        sets[[j]] = c(sets[[j]], elements)
+      }
+    }
+  }
+  return(sets)
+}
+
+venn_by_counts <- function(count1, count2, common, name1 = "freebayes", name2 = "mpileup") {
+  # Generates a venn diagram from raw count numbers
+  df.counts <- as.data.frame(rbind(c(1, 1, common), c(1, 0, count1), c(0, 1, count2)))
+  names(df.counts) <- c(name1, name2, "counts")
+  return(ggvenn(transform_counts(df.counts), fill_color = c("red", "blue")))
+}
+
+barplot_by_indiv <- function(df1, df2, name1 = "freebayes", name2 = "mpileup") {
+  # Generates a side by side bar plot (ggplot) from 2 dataframes
+  ns <- c(names(df1), "fill")
+  df1 <- cbind(df1, rep(name1, nrow(df1)))
+  df2 <- cbind(df2, rep(name2, nrow(df2)))
+  names(df1) <- ns
+  names(df2) <- ns
+  df <- rbind(df1, df2)
+  gb <- ggplot(data = df, aes(x = INDV, y = MEAN_DEPTH, fill = fill)) +
+    geom_bar(stat = "identity", position = position_dodge())
+
+  return(gb)
+}
+```

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Does not need to be run as slurm job
 
 module load vcftools
 
@@ -16,7 +17,7 @@ cp *.txt $OUT_DIR
 
 cd $OUT_DIR
 
-# Replace file names with bb1-10 in mpileup to match with freebayes. File name expansion in bash is ALPHABETICALLY
+# Replace file names with bb1-10 in mpileup to match with freebayes. File name expansion in bash is ALPHABETICALLY.
 i=0
 for bam in $BAM_DIR/*.sorted.bam; do
     [ -e "$bam" ] || continue
