@@ -43,13 +43,3 @@ venn1 <- venn_by_counts(snp.stats[3, 3], snp.stats[4, 3], snp.stats[6, 3])
 # Mean depth across individuals for each method
 barplot1 <- barplot_by_indiv(depth.fb, depth.mp) + xlab("Individual") + ylab("Mean Depth") + labs(fill = "Method")
 
-
-
-
-
-# NOTES
-
-# 0 = all different, 1 = all same
-# DONT KNOW TRUTH LIKE WITH GOLD STANDARD THING
-
-

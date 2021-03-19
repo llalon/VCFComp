@@ -24,7 +24,7 @@ Variant calling is the process of determining and quantifying genetic variation,
 
 ## Methods
 
-Bcftools mpileup version 1.9, and freebayes version 1.2.0 was used to compare. 10 unknown sequences of individual burbot (*lota. lota*) fish were obtained from Mandeville et al. 2014 which were previously aligned to a burbot reference *l. lota* genome (GCA_900302385.1_ASM90030238v1_genomic). Read group information was added to each sample using Picard version 2.23.2. The resulting VCFs were filtered by quality, greater than 20 only, using vcffilter, and variant stats, including the number of SNPs, and minor allele frequency was obtained using bcftools and vcftools. Multi-allelic SNPs and indels were not filtered. The full pipeline code can be found at https://github.com/llalon/VCFComp, with only key components shown below, and within the appendix. Computation was done on the compute Canada platform.
+Bcftools mpileup version 1.9, and freebayes version 1.2.0 was used to compare. 10 unknown sequences of individual burbot (*lota. lota*) fish were obtained from Mandeville et al. 2014 which were previously aligned to a burbot reference *l. lota* genome (GCA_900302385.1_ASM90030238v1_genomic) using bwa-mem. Read group information was added to each sample using Picard version 2.23.2. The resulting VCFs were filtered by quality, greater than 20 only, using vcffilter, and variant stats, including the number of SNPs, and minor allele frequency was obtained using bcftools and vcftools. Multi-allelic SNPs and indels were not filtered. The full pipeline code can be found at https://github.com/llalon/VCFComp, with only key components shown below, and within the appendix. Computation was done on the compute Canada platform.
 
 Directories, on ComputeCanada Cedar, used for the analysis:
 
@@ -215,37 +215,35 @@ ggarrange(hist1 + ggtitle("A"),
 venn1
 ```
 
-Compared to mpileup, freebayes had an overall larger number of SNPs; Freebayes had 106117 total SNPs whereas mpileup had 61846 with 39933 overlappings between both methods (Fig 2). The mean minor allele frequency was 0.133 for freebayes and 0.057 for mpileup with similar distributions (Fig 1B). The mean depth per SNP was significantly lower for mpileup, however, with a similar distribution (Fig 1A). Lastly, there were no differences in mean depth between individuals samples (Fig 1C).
+Compared to mpileup, freebayes had an overall larger number of SNPs. Freebayes had 106117 total SNPs whereas mpileup had 61846 with 39933 SNPs overlapping between both methods; Freebayes had 34% more SNPs compared to mpileup. (Fig 2). The mean minor allele frequency was 0.133 for freebayes and 0.057 for mpileup with similar distributions (Fig 1B). The distribution of mean SNP depth was similar between both methods, having an overall low depth; freebayes had a higher average depth compared to mpileup (Fig 1A). Lastly, there were no differences in mean depth between individuals sequence samples (Fig 1C).
 
 ## Discussion
 
-Please reflect on your results. Do your results concur with what others have found when comparing variant callers? Why do you think your results do or don’t match? 1How do you think the characteristics of this dataset (non-model organism, low-quality assembly, lower coverage) affect variant calls? Are there any other features of your vcf results that you find notable? What other filters might we consider applying?
+These results are consistent with previous studies. Freebayes is known to generally produce more variants compared to other variant calling methods including mpileup (Cornish and Guda, 2015; Warden et al, 2014; Hwang et al, 2015), especially when filtering for quality as done in this analysis (Hwang et al, 2015). Both methods had a low distribution of coverage depths which could be due to the lack of filtering, aside from quality scores, or a consequence of using a low-quality assembly, and non-model organism reference. Another consequence of using this reference genome is the inability to compare back to an unbiased whole-genome truth set. Errors such as true/false positives and negatives, and subsequently sensitivity, specificity, and IR/AR errors as described by Hwang et al, 2015 can not be accurately compared. Additionally, using a low-quality reference will increase the global error rate of variant calls and artifacts (Li, 2014). Other filtering that could be conducted in future analysis to gain greater insights into the differences between these variant calling methods could be to filter out artifacts by removing those with too low depths. Lower depth will result in a potentially larger number of false positives (Li, 2014). Additionally, for freebayes, high depth, but low-quality regions can result in copy number variations and hidden duplicates (Li, 2014). Aside from depth, filtering may also be done by minor/major allele frequencies, major allele frequencies close to 1 are related to sequencing errors, however, removing these will also filter out real SNPs (Nielsen et al, 2012). Ultimately, the trade-off between sensitivity and specificity depends on the nature of the experiment/analysis. In cases of polygenic risk score analyses, specificity, and a lower rate of false positives may be preferable. Lastly, it is worth mentioning compute time between each method. For this analysis freebayes took significantly longer to run against the same data compared to mpileup.
 
 
 ## References
 
-ASM90030238v1 - Genome - Assembly - NCBI. https://www.ncbi.nlm.nih.gov/assembly/GCA_900302385.1/#/st. Accessed 19 Mar. 2021.
+ASM90030238v1 - Genome - Assembly - NCBI.
 
-Garrison, Erik, and Gabor Marth. “Haplotype-Based Variant Detection from Short-Read Sequencing.” ArXiv:1207.3907 [q-Bio], July 2012. arXiv.org, http://arxiv.org/abs/1207.3907.
+Cornish,A. and Guda,C. (2015) A Comparison of Variant Calling Pipelines Using Genome in a Bottle as a Reference. BioMed Research International, 2015, 1–11.
 
-Hwang, Sohyun, et al. “Systematic Comparison of Variant Calling Pipelines Using Gold Standard Personal Exome Variants.” Scientific Reports, vol. 5, no. 1, Dec. 2015, p. 17875. DOI.org (Crossref), doi:10.1038/srep17875.
+Garrison,E. and Marth,G. (2012) Haplotype-based variant detection from short-read sequencing. arXiv:1207.3907 [q-bio].
 
-Li, Heng, et al. “The Sequence Alignment/Map Format and SAMtools.” Bioinformatics (Oxford, England), vol. 25, no. 16, Aug. 2009, pp. 2078–79. PubMed, doi:10.1093/bioinformatics/btp352.
+Hwang,S. et al. (2015) Systematic comparison of variant calling pipelines using gold standard personal exome variants. Sci Rep, 5, 17875.
 
-Na, Rong, et al. “Single-Nucleotide Polymorphism–Based Genetic Risk Score and Patient Age at Prostate Cancer Diagnosis.” JAMA Network Open, vol. 2, no. 12, Dec. 2019, p. e1918145. DOI.org (Crossref), doi:10.1001/jamanetworkopen.2019.18145.
+Li,H. et al. (2009) The Sequence Alignment/Map format and SAMtools. Bioinformatics, 25, 2078–2079.
 
-Wright, Belinda, et al. “From Reference Genomes to Population Genomics: Comparing Three Reference-Aligned Reduced-Representation Sequencing Pipelines in Two Wildlife Species.” BMC Genomics, vol. 20, no. 1, June 2019, p. 453. BioMed Central, doi:10.1186/s12864-019-5806-y.
+Li,H. (2014) Toward better understanding of artifacts in variant calling from high-coverage samples. Bioinformatics, 30, 2843–2851.
 
+Na,R. et al. (2019) Single-Nucleotide Polymorphism–Based Genetic Risk Score and Patient Age at Prostate Cancer Diagnosis. JAMA Netw Open, 2, e1918145.
 
+Nielsen,R. et al. (2012) SNP Calling, Genotype Calling, and Sample Allele Frequency Estimation from New-Generation Sequencing Data. PLoS ONE, 7, e37558.
 
-https://zbib.org/e6f49a66a05845b79c448bc46b64fa5e
+Warden,C.D. et al. (2014) Detailed comparison of two popular variant calling packages for exome and targeted exon studies. PeerJ, 2, e600.
 
-https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-019-5806-y
-https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2757999
-Mandeville et al. 2014
-(Li et al., 2009)
-(Garrison & Marth, 2012)
-https://www.ncbi.nlm.nih.gov/assembly/GCA_900302385.1/#/st
+Wright,B. et al. (2019) From reference genomes to population genomics: comparing three reference-aligned reduced-representation sequencing pipelines in two wildlife species. BMC Genomics, 20, 453.
+
 
 ## Appendix
 
